@@ -2,18 +2,49 @@ const AccountId = require('./accounts-model')
 const db = require('../../data/db-config')
 
 
+// const yup = require('yup');
+
+// // Define a schema for the account payload using Yup
+// const accountSchema = yup.object().shape({
+//   name: yup.string().trim().min(3, 'name of account must be between 3 and 100').max(100).required('name and budget are required'),
+//   budget: yup.number().required('name and budget are required').min(0, 'budget of account is too large or too small')
+//   .max(1000000, 'budget of account is too large or too small'),
+// });
 exports.checkAccountPayload = (req, res, next) => {
   // DO YOUR MAGIC
   // Note: you can either write "manual" validation logic
   // or use the Yup library (not currently installed)
 
   // 400 with if `req.body` is invalid:
+//   accountSchema
+//   .validate(req.body, { abortEarly: false, stripUnknown: true })
+//     .then((validated) => {
+//       req.body = validated; // Update req.body to the validated (and possibly coerced) values
+//       next();
+//     })
+//     .catch((err) => {
+//       // Custom error handling
+//       const errors = err.inner.reduce((acc, currentError) => {
+//         // Assuming your tests require a specific format or handling based on field
+//         acc[currentError.path] = currentError.errors[0]; // Taking the first error message for each field
+//         return acc;
+//       }, {});
+
+//       // Respond with a 400 status code and the aggregated errors
+//       res.status(400).json(errors);
+//     });
+// };
 
   const error = {status: 400};
   const {name, budget} = req.body;
    if(name === undefined || budget === undefined ) { //If either name or budget are undefined, return `{ message: "name and budget are required" }`
    error.message = "name and budget are required";
-   }else if (typeof name !== 'string') {
+   }else if(typeof name === 'string') {
+        req.body.name = name;
+   }
+   
+   
+   if (typeof name !== 'string') {
     error.message = "name of account must be a string";
    }else if(name.trim().length < 3 || name.trim().length > 100) {
     error.message = "name of account must be between 3 and 100"
@@ -26,10 +57,11 @@ exports.checkAccountPayload = (req, res, next) => {
 
    if(error.message) {
     next(error);
-   }else {
-    next();
-   }
-}
+    }else {
+     next();
+    }
+  }
+
 
 exports.checkAccountNameUnique = async (req, res, next) => {
   // DO YOUR MAGIC
@@ -40,7 +72,7 @@ exports.checkAccountNameUnique = async (req, res, next) => {
  try {
   const nameExist = await db('accounts').where('name', accountName.trim()).first();
   if(nameExist) {
-    res.status(404).json({
+    res.status(400).json({
       message: "that name is taken"
     })
  } else {

@@ -10,8 +10,10 @@ const db = require('../../data/db-config')
 //   budget: yup.number().required('name and budget are required').min(0, 'budget of account is too large or too small')
 //   .max(1000000, 'budget of account is too large or too small'),
 // });
+
+
 exports.checkAccountPayload = (req, res, next) => {
-  // DO YOUR MAGIC
+  
   // Note: you can either write "manual" validation logic
   // or use the Yup library (not currently installed)
 
@@ -35,33 +37,34 @@ exports.checkAccountPayload = (req, res, next) => {
 //     });
 // };
 
-  const error = {status: 400};
-  const {name, budget} = req.body;
-   if(name === undefined || budget === undefined ) { //If either name or budget are undefined, return `{ message: "name and budget are required" }`
-   error.message = "name and budget are required";
-   }else if(typeof name === 'string') {
-        req.body.name = name;
-   }
-   
-   
-   if (typeof name !== 'string') {
-    error.message = "name of account must be a string";
-   }else if(name.trim().length < 3 || name.trim().length > 100) {
-    error.message = "name of account must be between 3 and 100"
-   }else if(typeof budget !== 'number' || isNaN(budget)) { 
-     //- If budget is not able to be converted into a number, return `{ message: "budget of account must be a number" }`
-       error.message = "budget of account must be a number";
-   }else if(budget < 0 || budget > 1000000) {
-    error.message = "budget of account is too large or too small"
-   }
+const error = {status: 400};
+let {name, budget} = req.body;
 
-   if(error.message) {
-    next(error);
-    }else {
-     next();
-    }
+// Trim the name field if it's not undefined
+if (typeof name === 'string') {
+  name = name.trim();
+}
+
+if(name === undefined || budget === undefined ) { // If either name or budget are undefined
+  error.message = "name and budget are required";
+} else if (typeof name !== 'string') { // If name is not a string
+  error.message = "name of account must be a string";
+} else if(name.length < 3 || name.length > 100) { // Check length after trimming
+  error.message = "name of account must be between 3 and 100";
+} else if(typeof budget !== 'number' || isNaN(budget)) { // If budget is not a number
+  error.message = "budget of account must be a number";
+} else if(budget < 0 || budget > 1000000) { // If budget is out of range
+  error.message = "budget of account is too large or too small";
+}
+
+if(error.message) {
+  res.status(400).json({ message: error.message });
+} else {
+  // Update req.body.name with the trimmed name
+  req.body.name = name;
+  next();
   }
-
+}
 
 exports.checkAccountNameUnique = async (req, res, next) => {
   // DO YOUR MAGIC
